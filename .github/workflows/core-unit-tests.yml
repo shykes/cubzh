@@ -4,6 +4,7 @@ name: Core Unit Tests
     pull_request:
         branches:
             - main
+    workflow_dispatch: {}
 jobs:
     dagger:
         runs-on: ubuntu-latest

@@ -12,6 +12,13 @@ func (m *Github) Config() *dagger.Directory {
 			PublicToken: "p.eyJ1IjogIjFiZjEwMmRjLWYyZmQtNDVhNi1iNzM1LTgxNzI1NGFkZDU2ZiIsICJpZCI6ICI4ZmZmNmZkMi05MDhiLTQ4YTEtOGQ2Zi1iZWEyNGRkNzk4MTkifQ.l1Sf1gB37veXUWhxOgmjvjYcrh32NiuovbMxvjVI7Z0",
 		}).
 		WithPipeline(
+			"debug",
+			"directory with-directory --directory=. glob --pattern=*",
+			dagger.GhaWithPipelineOpts{
+				Dispatch: true,
+				Module:   "github.com/shykes/core",
+			}).
+		WithPipeline(
 			"Lua Modules (linter)",
 			"lint-modules --src=.:modules",
 			dagger.GhaWithPipelineOpts{

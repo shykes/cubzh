@@ -4,6 +4,7 @@ name: Lua Modules (linter)
     pull_request:
         branches:
             - main
+    workflow_dispatch: {}
 jobs:
     dagger:
         runs-on: ubuntu-latest

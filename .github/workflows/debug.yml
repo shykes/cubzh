@@ -1,9 +1,6 @@
 # This file was generated. See https://daggerverse.dev/mod/github.com/shykes/gha
-name: Core clang-format
+name: debug
 "on":
-    pull_request:
-        branches:
-            - main
     workflow_dispatch: {}
 jobs:
     dagger:
@@ -11,15 +8,6 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-              with:
-                lfs: "true"
-                sparse-checkout: |-
-                    core
-                    deps/libz
-                    dagger.json
-                    .dagger
-                    dagger
-                    ci
             - name: scripts/install-dagger.sh
               id: install-dagger
               run: |
@@ -146,8 +134,9 @@ jobs:
                 } >"${GITHUB_STEP_SUMMARY}"
               env:
                 _EXPERIMENTAL_DAGGER_CLOUD_TOKEN: p.eyJ1IjogIjFiZjEwMmRjLWYyZmQtNDVhNi1iNzM1LTgxNzI1NGFkZDU2ZiIsICJpZCI6ICI4ZmZmNmZkMi05MDhiLTQ4YTEtOGQ2Zi1iZWEyNGRkNzk4MTkifQ.l1Sf1gB37veXUWhxOgmjvjYcrh32NiuovbMxvjVI7Z0
-                COMMAND: dagger call -q lint-core --src=.:lint-core
+                COMMAND: dagger call -q directory with-directory --directory=. glob --pattern=*
                 DAGGER_CLOUD_TOKEN: p.eyJ1IjogIjFiZjEwMmRjLWYyZmQtNDVhNi1iNzM1LTgxNzI1NGFkZDU2ZiIsICJpZCI6ICI4ZmZmNmZkMi05MDhiLTQ4YTEtOGQ2Zi1iZWEyNGRkNzk4MTkifQ.l1Sf1gB37veXUWhxOgmjvjYcrh32NiuovbMxvjVI7Z0
+                DAGGER_MODULE: github.com/shykes/core
                 GITHUB_ACTION: ${{ github.action }}
                 GITHUB_ACTION_PATH: ${{ github.action_path }}
                 GITHUB_ACTION_REF: ${{ github.action_ref }}
