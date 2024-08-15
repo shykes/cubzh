@@ -23,9 +23,9 @@ func (m *Github) Config() *dagger.Directory {
 			"lint-modules --src=.:modules",
 			dagger.GhaWithPipelineOpts{
 				Dispatch: true,
-				SparseCheckout: []string{
-					"lua",
-				},
+				//		SparseCheckout: []string{
+				//			"lua",
+				//		},
 			},
 		).
 		WithPipeline(
@@ -34,10 +34,10 @@ func (m *Github) Config() *dagger.Directory {
 			dagger.GhaWithPipelineOpts{
 				Dispatch: true,
 				Lfs:      true,
-				SparseCheckout: []string{
-					"core",
-					"deps/libz",
-				},
+				//		SparseCheckout: []string{
+				//			"core",
+				//			"deps/libz",
+				//		},
 			}).
 		WithPipeline(
 			"Core clang-format",
@@ -45,10 +45,10 @@ func (m *Github) Config() *dagger.Directory {
 			dagger.GhaWithPipelineOpts{
 				Dispatch: true,
 				Lfs:      true,
-				SparseCheckout: []string{
-					"core",
-					"deps/libz",
-				},
+				//				SparseCheckout: []string{
+				//					"core",
+				//					"deps/libz",
+				//				},
 			})
 	return ci.
 		OnPullRequest(
