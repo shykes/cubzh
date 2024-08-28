@@ -9,7 +9,6 @@ theme = require("uitheme").current
 ease = require("ease")
 friends = require("friends")
 settings = require("settings")
--- worlds = require("worlds")
 api = require("api")
 systemApi = require("system_api", System)
 alert = require("alert")
@@ -19,8 +18,6 @@ sfx = require("sfx")
 logo = require("logo")
 uiPointer = require("ui_pointer")
 signup = require("signup")
-
--- conf = require("config")
 
 -- CONSTANTS
 
@@ -80,6 +77,7 @@ MODAL_KEYS = {
 	WORLD = 12,
 	ITEM = 13,
 	CREATIONS = 14,
+	USERNAME_FORM = 15,
 }
 
 -- User account management
@@ -256,6 +254,11 @@ function showModal(key, config)
 		activeModal = modal:create(content, maxModalWidth, maxModalHeight, updateModalPosition, ui)
 	elseif key == MODAL_KEYS.SETTINGS then
 		content = settings:createModalContent({ clearCache = true, account = true, uikit = ui })
+		activeModal = modal:create(content, maxModalWidth, maxModalHeight, updateModalPosition, ui)
+	elseif key == MODAL_KEYS.USERNAME_FORM then
+		local config = config or {}
+		config.uikit = ui
+		content = require("username_form"):createModalContent(config)
 		activeModal = modal:create(content, maxModalWidth, maxModalHeight, updateModalPosition, ui)
 	end
 
@@ -441,7 +444,12 @@ function refreshDisplay()
 			alertModal:show()
 		end
 
-		chatBtn:show()
+		if System.IsChatEnabled then
+			chatBtn:show()
+		else
+			chatBtn:hide()
+		end
+
 		pezhBtn:show()
 	end
 end
@@ -782,13 +790,11 @@ function removeBadge()
 end
 
 if System.IsHomeAppRunning then
-	local icon = Data:FromBundle("images/icon-settings.png")
-	local quad = Quad()
-	quad.Image = {
-		data = icon,
-		alpha = true,
-	}
-	local settingsIcon = ui:frame({ quad = quad })
+	local settingsIcon =
+		ui:frame({ image = {
+			data = Data:FromBundle("images/icon-settings.png"),
+			cutout = true,
+		} })
 	settingsIcon.Width = 50
 	settingsIcon.Height = 50
 	settingsIcon:setParent(cubzhBtn)
@@ -937,6 +943,10 @@ chatBtn.onRelease = function(self)
 		refreshChat()
 	end
 end
+
+-- hide chat button by default
+-- display when authenticated if System.IsChatEnabled
+chatBtn:hide()
 
 -- PEZH
 
@@ -1099,9 +1109,25 @@ function getCubzhMenuModalContent()
 	local node = ui:createFrame()
 	content.node = node
 
+	local btnWorlds = ui:buttonNeutral({ content = "🌎 Worlds", textSize = "default", padding = theme.padding })
+	btnWorlds:setParent(node)
+	btnWorlds.Height = CUBZH_MENU_SECONDARY_BUTTON_HEIGHT
+	btnWorlds.onRelease = function()
+		if activeModal ~= nil then
+			local content = require("gallery"):createModalContent({
+				uikit = ui,
+				type = "worlds",
+				displayLikes = true,
+				categories = { "featured" },
+				perPage = 100,
+			})
+			activeModal:push(content)
+		end
+	end
+
 	local btnItems
 	if dev then
-		btnItems = ui:buttonNeutral({ content = "Items", textSize = "default" })
+		btnItems = ui:buttonNeutral({ content = "⚔️ Items", textSize = "default", padding = theme.padding })
 		btnItems:setParent(node)
 		btnItems.Height = CUBZH_MENU_SECONDARY_BUTTON_HEIGHT
 
@@ -1150,11 +1176,13 @@ function getCubzhMenuModalContent()
 
 	if dev then
 		buttons = {
+			{ btnWorlds },
 			{ btnItems },
 			{ btnLeave },
 		}
 	else
 		buttons = {
+			{ btnWorlds },
 			{ btnLeave },
 		}
 	end
@@ -1552,11 +1580,9 @@ menu.ShowWorld = function(self, config)
 	if self ~= menu then
 		error("Menu:ShowWorld(config): use `:`", 2)
 	end
-
 	if menuSectionCanBeShown() == false then
 		return false
 	end
-
 	showModal(MODAL_KEYS.WORLD, config)
 	return true
 end
@@ -1583,11 +1609,9 @@ menu.ShowItem = function(self, config)
 	if self ~= menu then
 		error("Menu:ShowItem(config): use `:`", 2)
 	end
-
 	if menuSectionCanBeShown() == false then
 		return false
 	end
-
 	showModal(MODAL_KEYS.ITEM, config)
 	return true
 end
@@ -1602,6 +1626,16 @@ menu.ShowCreations = function(_)
 		return false
 	end
 	showModal(MODAL_KEYS.CREATIONS)
+	return true
+end
+
+-- undocumented on purpose
+-- works only from home
+menu.ShowUsernameForm = function(_, config)
+	if menuSectionCanBeShown() == false then
+		return false
+	end
+	showModal(MODAL_KEYS.USERNAME_FORM, config)
 	return true
 end
 
@@ -1835,6 +1869,12 @@ menu:OnAuthComplete(function()
 
 	-- connects client to server if it makes sense (maxPlayers > 1)
 	connect()
+
+	if System.IsChatEnabled then
+		chatBtn:show()
+	else
+		chatBtn:hide()
+	end
 
 	topBar:parentDidResize()
 	if chat then

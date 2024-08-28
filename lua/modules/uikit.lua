@@ -307,46 +307,6 @@ function createUI(system)
 			attr.object.LocalPosition.Z = -UI_FAR * 0.45
 		end
 
-		-- SORT ORDERS
-		-- TODO: review this, keeping number of different sort orders to a minimum is a good thing
-
-		local sortOrder = 1
-		parent = attr.object:GetParent()
-		while parent ~= nil do
-			if parent.SortOrder ~= nil then
-				if parent.SortOrder >= sortOrder then
-					sortOrder = parent.SortOrder + 1
-					break
-				end
-			end
-			parent = parent:GetParent()
-		end
-
-		-- apply sort order
-		-- SortOrder == 255 means elements are forced display on top, do not modify in that case
-		if attr.object.SortOrder then
-			if attr.object.SortOrder < 255 then
-				attr.object.SortOrder = sortOrder
-			end
-		else
-			sortOrder = sortOrder - 1
-		end
-
-		local t = {}
-		t.applySortOrderToChildren = function(n, sortOrder)
-			local children = n.Children
-			for _, child in ipairs(children) do
-				if child.SortOrder ~= nil then
-					-- SortOrder == 255 means elements are forced display on top, do not modify in that case
-					if child.SortOrder < 255 then
-						child.SortOrder = sortOrder
-					end
-				end
-				t.applySortOrderToChildren(child, sortOrder + 1)
-			end
-		end
-		t.applySortOrderToChildren(attr.object, sortOrder + 1)
-
 		_parentDidResizeWrapper(self)
 	end
 
@@ -460,7 +420,6 @@ function createUI(system)
 		local previousObject = node.object
 		node.object = background
 		if previousObject ~= nil then
-			background.SortOrder = previousObject.SortOrder
 			node.object:SetParent(previousObject.Parent)
 			node.object.LocalPosition:Set(previousObject.LocalPosition)
 			node.object.LocalRotation:Set(previousObject.LocalRotation)
@@ -1061,7 +1020,7 @@ function createUI(system)
 		node.shape.Rotation = Number3.Zero
 		node.pivot.LocalPosition = Number3.Zero
 		node.pivot.LocalRotation = Number3.Zero
-		
+
 		local aabb = Box()
 		aabb:Fit(node.shape, { recursive = true })
 
@@ -1228,14 +1187,14 @@ function createUI(system)
 		if frameScrollCellQuadData == nil then
 			frameScrollCellQuadData = Data:FromBundle("images/cell_dark.png")
 		end
-		local quad = Quad()
-		quad.Image = {
-			data = frameScrollCellQuadData,
-			slice9 = { 0.5, 0.5 },
-			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
-		}
-		return ui.frame(self, { quad = quad })
+		return ui.frame(self, {
+			image = {
+				data = frameScrollCellQuadData,
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE,
+				cutout = true,
+			},
+		})
 	end
 
 	local frameScrollSelectorQuadData
@@ -1246,81 +1205,79 @@ function createUI(system)
 		if frameScrollSelectorQuadData == nil then
 			frameScrollSelectorQuadData = Data:FromBundle("images/cell_selector.png")
 		end
-		local quad = Quad()
-		quad.Image = {
-			data = frameScrollSelectorQuadData,
-			slice9 = { 0.5, 0.5 },
-			slice9Scale = DEFAULT_SLICE_9_SCALE * 2,
-			alpha = true,
-		}
-		return ui.frame(self, { quad = quad })
+		return ui.frame(self, {
+			image = {
+				data = frameScrollSelectorQuadData,
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE * 2,
+				cutout = true,
+			},
+		})
 	end
 
 	local frameTextBackgroundQuadData
 	ui.frameTextBackground = function(self)
 		if self ~= ui then
-			error("ui:frameGenericContainer(): use `:`", 2)
+			error("ui:frameTextBackground(): use `:`", 2)
 		end
 		if frameTextBackgroundQuadData == nil then
 			frameTextBackgroundQuadData = Data:FromBundle("images/text_background_dark.png")
 		end
-		local quad = Quad()
-		quad.Image = {
-			data = frameTextBackgroundQuadData,
-			slice9 = { 0.5, 0.5 },
-			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
-		}
-		return ui.frame(self, { quad = quad })
+		return ui.frame(self, {
+			image = {
+				data = frameTextBackgroundQuadData,
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE,
+				alpha = true,
+			},
+		})
 	end
 
-	-- local frameMaskWithRoundCornersQuadData
-	-- ui.frameMaskWithRoundCorners = function(self)
-	-- 	if self ~= ui then
-	-- 		error("ui:frameGenericContainer(): use `:`", 2)
-	-- 	end
-	-- 	if frameMaskWithRoundCornersQuadData == nil then
-	-- 		frameMaskWithRoundCornersQuadData = Data:FromBundle("images/cell_content_mask.png")
-	-- 	end
-	-- 	local quad = Quad()
-	-- 	quad.IsMask = true
-	-- 	quad.Image = {
-	-- 		data = frameMaskWithRoundCornersQuadData,
-	-- 		slice9 = { 0.5, 0.5 },
-	-- 		slice9Scale = DEFAULT_SLICE_9_SCALE,
-	-- 		cutout = true,
-	-- 	}
-	-- 	return ui.frame(self, { quad = quad })
-	-- end
+	local frameMaskWithRoundCornersQuadData
+	ui.frameMaskWithRoundCorners = function(self)
+		if self ~= ui then
+			error("ui:frameMaskWithRoundCorners(): use `:`", 2)
+		end
+		if frameMaskWithRoundCornersQuadData == nil then
+			frameMaskWithRoundCornersQuadData = Data:FromBundle("images/cell_content_mask.png")
+		end
+		return ui.frame(self, {
+			image = {
+				data = frameMaskWithRoundCornersQuadData,
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE,
+				cutout = true,
+				mask = true,
+			},
+		})
+	end
 
 	ui.frameGenericContainer = function(self)
 		if self ~= ui then
 			error("ui:frameGenericContainer(): use `:`", 2)
 		end
-		local image = Data:FromBundle("images/frame.png")
-		local quad = Quad()
-		quad.Image = {
-			data = image,
-			slice9 = { 0.5, 0.5 },
-			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
-		}
-		return ui.frame(self, { quad = quad })
+		return ui.frame(self, {
+			image = {
+				data = Data:FromBundle("images/frame.png"),
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE,
+				cutout = true,
+			},
+		})
 	end
 
 	ui.frameCreationContainer = function(self)
 		if self ~= ui then
-			error("ui:frameGenericContainer(): use `:`", 2)
+			error("ui:frameCreationContainer(): use `:`", 2)
 		end
-		local image = Data:FromBundle("images/frame_creation.png")
-		local quad = Quad()
-		quad.Image = {
-			data = image,
-			slice9 = { 0.5, 0.5 },
-			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
-		}
-		return ui.frame(self, { quad = quad })
+		return ui.frame(self, {
+			image = {
+				data = Data:FromBundle("images/frame_creation.png"),
+				slice9 = { 0.5, 0.5 },
+				slice9Scale = DEFAULT_SLICE_9_SCALE,
+				cutout = true,
+			},
+		})
 	end
 
 	ui.frame = function(self, config)
@@ -1331,16 +1288,17 @@ function createUI(system)
 		local defaultConfig = {
 			color = nil, -- can be a Color or Quad gradient table
 			image = nil,
-			quad = nil, -- allows to suply custom quad directly (takes priority over color or image)
-			-- transparent frame is created if color, image and quad are nil
+			-- transparent frame is created if color and image are nil
 			unfocuses = false, -- unfocused focused node when true
+			mask = false,
 		}
 
 		local options = {
 			acceptTypes = {
 				color = { "Color", "table" },
-				image = { "Data" },
-				quad = { "Quad" },
+				image = { "Data", "table" },
+				unfocuses = { "boolean" },
+				mask = { "boolean" },
 			},
 		}
 
@@ -1351,22 +1309,16 @@ function createUI(system)
 
 		node.config = config
 
-		local background
-
-		if config.quad ~= nil then
-			background = config.quad
+		local background = Quad()
+		background.IsDoubleSided = false
+		background.IsMask = config.mask
+		if config.image ~= nil then
+			background.Image = node.config.image
 		else
-			background = Quad()
-			if config.image ~= nil then
-				background.Image = node.config.image
-				background.IsDoubleSided = true
-			else
-				if config.color == nil then
-					config.color = Color(0, 0, 0, 0) -- transparent
-				end
-				background.Color = config.color
-				background.IsDoubleSided = false
+			if config.color == nil then
+				config.color = Color.Clear
 			end
+			background.Color = config.color
 		end
 
 		_setupUIObject(background)
@@ -1387,12 +1339,19 @@ function createUI(system)
 			self.background.Color = color
 		end
 
+		node.getQuad = function(self)
+			if self ~= node then
+				error("frame:getQuad(): use `:`", 2)
+			end
+			return self.object
+		end
+
 		node.setColor = function(self, color)
 			if self ~= node then
 				error("frame:setColor(color): use `:`", 2)
 			end
-			if type(color) ~= Type.Color then
-				error("frame:setColor(color): color should be a Color", 2)
+			if type(color) ~= Type.Color and type(color) ~= "table" then
+				error("frame:setColor(color): color should be a Color or table (see Quad.Color reference)", 2)
 			end
 			self:_setColor(color)
 		end
@@ -1401,17 +1360,15 @@ function createUI(system)
 			if self ~= node then
 				error("frame:setImage(image): use `:`", 2)
 			end
-			if image ~= nil and type(image) ~= Type.Data then
-				error("frame:setImage(image): image should be a Data instance", 2)
+			if image ~= nil and type(image) ~= Type.Data and type(image) ~= "table" then
+				error("frame:setImage(image): image should be a Data or table (see Quad.Image reference)", 2)
 			end
 
 			self.background.Image = image
 			if image ~= nil then
 				self.background.Color = Color.White
-				self.background.IsDoubleSided = true
 			else
 				self.background.Color = color
-				self.background.IsDoubleSided = false
 			end
 		end
 
@@ -1433,13 +1390,6 @@ function createUI(system)
 		node._setHeight = function(self, v)
 			self.background.Height = v
 			self.background.CollisionBox = Box({ 0, 0, 0 }, { background.Width, background.Height, 0.1 })
-		end
-
-		if config ~= nil and config.image ~= nil then
-			if type(config.image) ~= Type.Data then
-				error("ui:createFrame(color, config): config.image should be a Data instance", 2)
-			end
-			node:setImage(config.image)
 		end
 
 		node.object.LocalPosition = { 0, 0, 0 }
@@ -2363,14 +2313,7 @@ function createUI(system)
 			end
 		end
 
-		node._unfocus = function(self)
-			if self.state ~= State.Focused then
-				return
-			end
-
-			self.state = State.Idle
-			self.cursor:hide()
-
+		node._removeListeners = function(self)
 			if self.textInputUpdateListener ~= nil then
 				Client.OSTextInput:Close()
 				self.textInputUpdateListener:Remove()
@@ -2401,6 +2344,17 @@ function createUI(system)
 				self.tickListener:Remove()
 				self.tickListener = nil
 			end
+		end
+
+		node._unfocus = function(self)
+			if self.state ~= State.Focused then
+				return
+			end
+
+			self.state = State.Idle
+			self.cursor:hide()
+
+			self:_removeListeners()
 
 			_textInputRefreshColor(self)
 			self:_refresh()
@@ -2417,13 +2371,182 @@ function createUI(system)
 			end
 		end
 
+		node.onRemoveSystem = function(self)
+			self:_removeListeners()
+		end
+
 		node:setParent(rootFrame)
 
 		return node
 	end
 
+	local sliderBarQuadData
+	ui.slider = function(self, config)
+		if self ~= ui then
+			error("ui:slider(config): use `:`", 2)
+		end
+
+		local defaultConfig = {
+			min = 0,
+			max = 10,
+			step = 1,
+			defaultValue = 5,
+			hapticFeedback = false,
+			barHeight = 16,
+			button = { -- can be a button or a button config
+				content = " ",
+			},
+			onValueChange = function(_) -- callback(value)
+			end,
+		}
+
+		local ok, err = pcall(function()
+			config = conf:merge(defaultConfig, config)
+		end)
+		if not ok then
+			error("ui:slider(config) - config error: " .. err, 2)
+		end
+
+		local min = config.min
+		local max = config.max
+		local step = config.step
+		local steps = math.floor(((max - min) / config.step)) + 1
+		local value = math.min(config.max, math.max(config.min, config.defaultValue))
+
+		local node = self:frame()
+		node.Width = 100
+
+		if sliderBarQuadData == nil then
+			sliderBarQuadData = Data:FromBundle("images/slider_bar.png")
+		end
+
+		local bar = ui:frame()
+		local q = bar:getQuad()
+		q.Image = {
+			data = sliderBarQuadData,
+			slice9 = { 0.5, 0.5 },
+			slice9Scale = DEFAULT_SLICE_9_SCALE,
+			alpha = true,
+		}
+		q.Color = Color.White
+
+		local btn
+		if config.button.type == NodeType.Button then
+			btn = config.button
+		else
+			btn = self:buttonNeutral(config.button)
+		end
+		btn:setParent(bar)
+
+		node.Height = btn.Height
+
+		local function setValue(v)
+			v = math.min(max, math.max(min, v))
+
+			v = v - min
+			local nSteps = math.floor((v + step * 0.5) / step)
+
+			v = min + step * nSteps
+
+			if v ~= value then
+				value = v
+				config.onValueChange(value)
+				if config.hapticFeedback then
+					Client:HapticFeedback()
+				end
+			end
+
+			-- set button position
+			local range = max - min
+			local pos = value - min
+			local percentage = pos / range
+
+			local minPos = btn.Width * 0.5
+			local maxPos = node.Width - btn.Width * 0.5
+			local d = maxPos - minPos
+
+			btn.pos.X = minPos + d * percentage - btn.Width * 0.5
+		end
+
+		local function setLocalX(x)
+			local minPos = btn.Width * 0.5
+			local maxPos = node.Width - btn.Width * 0.5
+			local newValue
+
+			if x <= minPos then
+				x = minPos
+				newValue = min
+			elseif x >= maxPos then
+				x = maxPos
+				newValue = max
+			else
+				x = x - minPos
+				local d = maxPos - minPos
+				local stepD = d / (steps - 1)
+				local nSteps = math.floor((x + (stepD * 0.5)) / stepD)
+
+				x = minPos + stepD * nSteps
+				newValue = min + step * nSteps
+			end
+
+			btn.pos.X = x - btn.Width * 0.5
+			if newValue ~= value then
+				value = newValue
+				config.onValueChange(value)
+				if config.hapticFeedback then
+					Client:HapticFeedback()
+				end
+			end
+		end
+
+		bar.parentDidResize = function(self)
+			local parent = self.parent
+			self.Width = parent.Width
+			self.Height = config.barHeight
+			self.pos.Y = parent.Height * 0.5 - self.Height * 0.5
+
+			btn.pos.Y = self.Height * 0.5 - btn.Height * 0.5
+			setValue(value)
+		end
+		bar:setParent(node)
+
+		local function pointerEventToLocalX(pressed, pe)
+			local pressedX = pressed.pos.X
+			local p = pressed.parent
+			while p ~= nil do
+				pressedX = pressedX + p.pos.X
+				p = p.parent
+			end
+			local x = pe.X * Screen.Width
+			x = x - pressedX
+			x = math.max(0, math.min(pressed.Width, x))
+			return x
+		end
+
+		node.onPress = function(self, _, _, pe)
+			local x = pointerEventToLocalX(self, pe)
+			setLocalX(x)
+			btn:_setState(State.Pressed)
+		end
+
+		node.onDrag = function(self, pe)
+			local x = pointerEventToLocalX(self, pe)
+			setLocalX(x)
+		end
+
+		node.onRelease = function()
+			btn:_setState(State.Idle)
+		end
+
+		node.onCancel = function()
+			btn:_setState(State.Idle)
+		end
+
+		return node
+	end
+
 	local SCROLL_ID = 0
-	ui.createScroll = function(self, config)
+	ui.scroll = function(self, config)
 		local defaultConfig = {
 			backgroundColor = Color(0, 0, 0, 0),
 			gradientColor = nil,
@@ -2433,6 +2556,7 @@ function createUI(system)
 			rigidity = SCROLL_DEFAULT_RIGIDITY,
 			friction = SCROLL_DEFAULT_FRICTION,
 			userdata = nil, -- can be used to provide extra context to loadCell / unloadCell
+			centerContent = false, -- center content when smaller than scroll area
 			loadCell = function(_, _) -- index, userdata
 				return nil
 			end,
@@ -2509,6 +2633,8 @@ function createUI(system)
 			cellInfo = {}, -- each entry: { top, bottom, left, right, width, height }
 		}
 
+		local firstRefresh = true
+
 		local released = true
 		local scrollPosition = 0
 		local defuseScrollSpeedTimer = nil
@@ -2552,39 +2678,41 @@ function createUI(system)
 		local beginScrollIndicator
 
 		if config.backgroundColor.A == 255 or config.gradientColor ~= nil then
-			local quad = Quad()
 			local opaque = Color(config.gradientColor or config.backgroundColor)
 			local transparent = Color(config.gradientColor or config.backgroundColor)
 			transparent.A = 0
+			local scrollEdgeColor = opaque
 			if right then
-				quad.Color = { gradient = "H", from = transparent, to = opaque }
+				scrollEdgeColor = { gradient = "H", from = transparent, to = opaque }
 			elseif left then
-				quad.Color = { gradient = "H", from = opaque, to = transparent }
+				scrollEdgeColor = { gradient = "H", from = opaque, to = transparent }
 			elseif down then
-				quad.Color = { gradient = "V", from = opaque, to = transparent }
+				scrollEdgeColor = { gradient = "V", from = opaque, to = transparent }
 			elseif up then
-				quad.Color = { gradient = "V", from = transparent, to = opaque }
+				scrollEdgeColor = { gradient = "V", from = transparent, to = opaque }
 			end
-			endScrollIndicator = ui:frame({ quad = quad })
-			endScrollIndicator.object.SortOrder = 255
+			endScrollIndicator = ui:frame({ color = scrollEdgeColor })
 			endScrollIndicator:setParent(node)
+			-- TODO: here it would be ideal to request an extra offset eg. to the "setParent" function instead of offseting manually
+			-- for this to work, uiukit's Z ordering w/ shapes needs to be fixed (here, shapes are in front whatever we do)
+			endScrollIndicator.object.LocalPosition.Z = endScrollIndicator.object.LocalPosition.Z - 100
 
-			quad = Quad()
 			opaque = Color(config.backgroundColor)
 			transparent = Color(config.backgroundColor)
 			transparent.A = 0
+			scrollEdgeColor = opaque
 			if right then
-				quad.Color = { gradient = "H", from = opaque, to = transparent }
+				scrollEdgeColor = { gradient = "H", from = opaque, to = transparent }
 			elseif left then
-				quad.Color = { gradient = "H", from = transparent, to = opaque }
+				scrollEdgeColor = { gradient = "H", from = transparent, to = opaque }
 			elseif down then
-				quad.Color = { gradient = "V", from = transparent, to = opaque }
+				scrollEdgeColor = { gradient = "V", from = transparent, to = opaque }
 			elseif up then
-				quad.Color = { gradient = "V", from = opaque, to = transparent }
+				scrollEdgeColor = { gradient = "V", from = opaque, to = transparent }
 			end
-			beginScrollIndicator = ui:frame({ quad = quad })
-			beginScrollIndicator.object.SortOrder = 255
+			beginScrollIndicator = ui:frame({ color = scrollEdgeColor })
 			beginScrollIndicator:setParent(node)
+			beginScrollIndicator.object.LocalPosition.Z = beginScrollIndicator.object.LocalPosition.Z - 100
 		end
 
 		local function loadCellInfo(cellIndex)
@@ -2836,6 +2964,20 @@ function createUI(system)
 					cellIndex = cellIndex + 1
 				end
 			end
+
+			if firstRefresh then
+				firstRefresh = false
+				if scrollPosition == 0 then
+					-- default scrollPosition can be set to something
+					-- else to center content when content size is smaller
+					-- than scroll size. In that case we need to refresh again.
+					scrollPosition = node:capPosition(scrollPosition)
+					if scrollPosition ~= 0 then
+						scrollSpeed = 0
+						node:refresh()
+					end
+				end
+			end
 		end
 
 		node.applyScrollDelta = function(_, dx, dy)
@@ -2848,20 +2990,28 @@ function createUI(system)
 
 		node.capPosition = function(_, pos)
 			if down then
-				local limit = cache.contentHeight - node.Height
-				if limit < 0 then
-					limit = 0
+				if cache.contentHeight < node.Height and config.centerContent then
+					pos = -(node.Height - cache.contentHeight) * 0.5
+				else
+					local limit = cache.contentHeight - node.Height
+					if limit < 0 then
+						limit = 0
+					end
+					pos = math.min(limit, math.max(0, pos))
 				end
-				pos = math.min(limit, math.max(0, pos))
 			elseif up then
 				-- TODO: review
 				error("IMPLEMENT scroll capPosition for up direction")
 			elseif right then
-				local limit = node.Width - cache.contentWidth
-				if limit > 0 then
-					limit = 0
+				if cache.contentWidth < node.Width and config.centerContent then
+					pos = (node.Width - cache.contentWidth) * 0.5
+				else
+					local limit = node.Width - cache.contentWidth
+					if limit > 0 then
+						limit = 0
+					end
+					pos = math.max(limit, math.min(pos, 0))
 				end
-				pos = math.max(limit, math.min(pos, 0))
 			elseif left then
 				-- TODO: review
 				error("IMPLEMENT scroll capPosition for left direction")
@@ -2904,7 +3054,8 @@ function createUI(system)
 				else
 					pos = pos + self.Width * 0.5
 				end
-				self:setScrollPosition(-pos)
+				pos = node:capPosition(-pos)
+				self:setScrollPosition(pos)
 			end
 		end
 
@@ -2931,7 +3082,10 @@ function createUI(system)
 				contentHeight = 0,
 				cellInfo = {},
 			}
+
+			firstRefresh = true
 			setScrollPosition(0)
+			scrollSpeed = 0
 		end
 
 		container.parentDidResizeSystem = function(_)
@@ -3020,7 +3174,6 @@ function createUI(system)
 					cappedPosition = node:capPosition(scrollPosition)
 					if cappedPosition ~= scrollPosition then
 						local speed = (cappedPosition - scrollPosition) * SCROLL_OUT_OF_BOUNDS_COUNTER_SPEED
-						-- scrollPosition = scrollPosition + speed * dt
 						setScrollPosition(scrollPosition + speed * dt)
 						refresh = true
 					end
@@ -3124,7 +3277,8 @@ function createUI(system)
 
 		node:refresh()
 		return node
-	end -- ui:button
+	end -- ui:scroll
+	ui.createScroll = ui.scroll -- legacy
 
 	ui.button = function(self, config)
 		if self ~= ui then
@@ -3443,6 +3597,12 @@ function createUI(system)
 		node.onPress = function(_) end
 		node.onRelease = function(_) end
 
+		node._setState = function(self, state)
+			self.state = state
+			_buttonRefreshBackground(self)
+			_buttonRefreshColor(self)
+		end
+
 		node.select = function(self)
 			if self.selected then
 				return
@@ -3530,7 +3690,7 @@ function createUI(system)
 
 			local cells = {}
 
-			local scroll = ui:createScroll({
+			local scroll = ui:scroll({
 				direction = "down",
 				cellPadding = 0,
 				padding = 0,
@@ -3675,7 +3835,8 @@ function createUI(system)
 			data = displayAsDisabled and btnNeutralDisabledQuadData or btnNeutralQuadData,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			alpha = displayAsDisabled,
+			cutout = not displayAsDisabled,
 		}
 
 		config.backgroundQuadPressed = Quad()
@@ -3683,7 +3844,8 @@ function createUI(system)
 			data = displayAsDisabled and btnNeutralDisabledQuadData or btnNeutralPressedQuadData,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			alpha = displayAsDisabled,
+			cutout = not displayAsDisabled,
 		}
 
 		config.backgroundQuadSelected = Quad()
@@ -3691,7 +3853,8 @@ function createUI(system)
 			data = displayAsDisabled and btnNeutralDisabledQuadData or btnNeutralSelectedQuadData,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			alpha = displayAsDisabled,
+			cutout = not displayAsDisabled,
 		}
 
 		config.backgroundQuadDisabled = Quad()
@@ -3721,7 +3884,7 @@ function createUI(system)
 			data = btnPositiveQuadData,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			cutout = true,
 		}
 
 		if btnPositivePressedQuadData == nil then
@@ -3732,7 +3895,7 @@ function createUI(system)
 			data = btnPositivePressedQuadData,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			cutout = true,
 		}
 
 		if btnPositiveDisabledQuadData == nil then
@@ -3760,7 +3923,7 @@ function createUI(system)
 			data = image,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			cutout = true,
 		}
 
 		image = Data:FromBundle("images/button_negative_pressed.png")
@@ -3769,7 +3932,7 @@ function createUI(system)
 			data = image,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			cutout = true,
 		}
 
 		return ui.button(self, config)
@@ -3783,7 +3946,7 @@ function createUI(system)
 			data = image,
 			slice9 = { 0.5, 0.5 },
 			slice9Scale = DEFAULT_SLICE_9_SCALE,
-			alpha = true,
+			cutout = true,
 		}
 		return ui.button(self, config)
 	end

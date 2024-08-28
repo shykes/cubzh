@@ -189,7 +189,7 @@ mod.createModalContent = function(_, config)
 		end
 	end
 
-	local scroll = ui:createScroll({
+	local scroll = ui:scroll({
 		-- backgroundColor = Color(255, 0, 0),
 		backgroundColor = theme.buttonTextColor,
 		-- backgroundColor = Color(0, 255, 0, 0.3),
@@ -212,10 +212,6 @@ mod.createModalContent = function(_, config)
 
 	-- refreshes UI with what's in local config.item / item
 	privateFields.refreshItem = function()
-		if name ~= nil then
-			name.Text = item.name or ""
-		end
-
 		if createMode then
 			if item.description == nil or item.description == "" then
 				description.empty = true

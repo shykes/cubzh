@@ -1,7 +1,3 @@
--- Modules = {
--- 	bundle = "bundle",
--- }
-
 bundle = require("bundle")
 
 local CONFIG = {
@@ -257,7 +253,7 @@ Client.OnStart = function()
 
 	backgroundQuad = Quad()
 	backgroundQuad.IsUnlit = true
-	backgroundQuad.IsDoubleSided = true
+	backgroundQuad.IsDoubleSided = false
 	backgroundQuad.Color = { gradient = "V", from = Color(166, 96, 255), to = Color(72, 102, 209) }
 	backgroundQuad.Width = Screen.RenderWidth
 	backgroundQuad.Height = Screen.RenderHeight
@@ -268,7 +264,7 @@ Client.OnStart = function()
 
 	backgroundLogo = Quad()
 	backgroundLogo.IsUnlit = true
-	backgroundLogo.IsDoubleSided = true
+	backgroundLogo.IsDoubleSided = false
 	backgroundLogo.Color = Color(255, 255, 255, 0.1)
 	backgroundLogo.Image = logoTile
 	backgroundLogo.Width = math.max(Screen.RenderWidth, Screen.RenderHeight)
@@ -553,7 +549,6 @@ function avatar()
 
 	_avatar = {}
 
-	local bundle = require("bundle")
 	local avatarModule = require("avatar")
 
 	local hairs = {
@@ -1513,6 +1508,7 @@ function home()
 				dataFetcher.nbEntities = #friends
 
 				if dataFetcher.scroll then
+					dataFetcher.scroll:flush()
 					dataFetcher.scroll:refresh()
 				end
 
@@ -1565,6 +1561,8 @@ function home()
 			table.insert(recycledFriendCells, cell)
 		end
 
+		local addFriendsCell
+
 		local categoryUnusedCells = {}
 		local categoryCells = {}
 		local categories = {
@@ -1580,8 +1578,7 @@ function home()
 						local avatar = friendAvatarCache[index]
 						if avatar == nil then
 							avatar = uiAvatar:getHeadAndShoulders({
-								usernameOrId = friend.id,
-								backgroundColor = Color(49, 51, 57),
+								usernameOrId = friend.id
 							})
 							friendAvatarCache[index] = avatar
 						end
@@ -1607,10 +1604,48 @@ function home()
 						friendCell.avatar = avatar
 
 						return friendCell
+					elseif index == dataFetcher.nbEntities + 1 then
+						if addFriendsCell == nil then
+							addFriendsCell = ui:frameScrollCell()
+							addFriendsCell.Width = CONFIG.FRIEND_CELL_SIZE * 3
+							addFriendsCell.parentDidResize = worldCellResizeFn
+
+							local image = ui:frame({ image = {
+								data = Data:FromBundle("images/friends.png"),
+								alpha = true,
+							} })
+							image.Width = CONFIG.FRIEND_CELL_SIZE * 3 - padding * 2
+							image.Height = image.Width * (1.0 / 3.0)
+							image:setParent(addFriendsCell)
+
+							local btn = ui:buttonPositive({ content = "👥 Add Friends", padding = theme.padding })
+							btn:setParent(addFriendsCell)
+
+							btn.parentDidResize = function(self)
+								local parent = self.parent
+								self.pos = {
+									parent.Width * 0.5 - self.Width * 0.5,
+									theme.padding,
+								}
+								image.pos = {
+									parent.Width * 0.5 - image.Width * 0.5,
+									parent.Height * 0.5 - image.Height * 0.5,
+								}
+							end
+
+							btn.onRelease = function()
+								Menu:ShowFriends()
+							end
+						end
+						return addFriendsCell
 					end
 				end,
 				unloadCell = function(_, cell)
-					recycleFriendCell(cell)
+					if cell == addFriendsCell then
+						cell:setParent(nil)
+					else
+						recycleFriendCell(cell)
+					end
 				end,
 				extraSetup = function(dataFetcher)
 					requestFriends(dataFetcher)
@@ -1801,7 +1836,7 @@ function home()
 			drawer:show()
 		end
 
-		scroll = ui:createScroll({
+		scroll = ui:scroll({
 			-- backgroundColor = Color(0, 255, 0, 0.3),
 			-- gradientColor = Color(37, 23, 59), -- Color(155, 97, 250),
 			padding = {
@@ -1831,6 +1866,26 @@ function home()
 						local username = ui:createText(Player.Username, Color.White)
 						username:setParent(usernameFrame)
 						username.pos = { theme.paddingTiny, theme.paddingTiny }
+
+						local editUsernameBtn
+						if Player.Username == "newbie" then
+							editUsernameBtn = ui:buttonNeutral({ content = "✏️" })
+							editUsernameBtn:setParent(profileCell)
+
+							editUsernameBtn.onRelease = function()
+								Menu:ShowUsernameForm()
+							end
+
+							local l
+							l = LocalEvent:Listen("username_set", function()
+								username.Text = Player.Username
+								editUsernameBtn:remove()
+								editUsernameBtn = nil
+								profileCell:parentDidResize() -- layout
+								l:Remove()
+								l = nil
+							end)
+						end
 
 						local editAvatarBtn = ui:buttonNeutral({ content = "✏️ Edit avatar" })
 						editAvatarBtn:setParent(profileCell)
@@ -1865,11 +1920,20 @@ function home()
 							usernameFrame.Width = username.Width + theme.paddingTiny * 2
 							usernameFrame.Height = username.Height + theme.paddingTiny * 2
 
-							local infoWidth = math.max(username.Width, editAvatarBtn.Width, visitHouseBtn.Width)
+							local usernameWidth = usernameFrame.Width
+							local usernameHeight = usernameFrame.Height
+							if editUsernameBtn then
+								local size = math.max(editUsernameBtn.Width, editUsernameBtn.Height)
+								editUsernameBtn.Width = size
+								editUsernameBtn.Height = size
+								usernameWidth = usernameWidth + padding + editAvatarBtn.Width
+								usernameHeight = math.max(usernameHeight, editUsernameBtn.Height)
+							end
 
-							local infoHeight = math.max(
-								usernameFrame.Height + editAvatarBtn.Height + visitHouseBtn.Height + padding * 2
-							)
+							local infoWidth = math.max(usernameWidth, editAvatarBtn.Width, visitHouseBtn.Width)
+
+							local infoHeight =
+								math.max(usernameHeight + editAvatarBtn.Height + visitHouseBtn.Height + padding * 2)
 
 							local avatarWidth = CONFIG.PROFILE_CELL_AVATAR_WIDTH
 
@@ -1878,7 +1942,7 @@ function home()
 
 							local totalWidth = infoWidth + avatarWidth + padding
 
-							local y = self.Height * 0.5 + infoHeight * 0.5 - username.Height
+							local y = self.Height * 0.5 + infoHeight * 0.5 - usernameHeight
 							local x = self.Width * 0.5 - totalWidth * 0.5
 
 							avatarTransparentFrame.pos.X = x - padding * 2
@@ -1888,7 +1952,13 @@ function home()
 							local previousAvatarCameraX = avatarCameraX
 							avatarCameraX = self.Width * 0.5 - totalWidth * 0.5 + avatarWidth * 0.5
 
-							usernameFrame.pos = { x, y }
+							usernameFrame.pos = { x, y + usernameHeight * 0.5 - usernameFrame.Height * 0.5 }
+							if editUsernameBtn then
+								editUsernameBtn.pos = {
+									usernameFrame.pos.X + usernameFrame.Width + padding,
+									y + usernameHeight * 0.5 - editUsernameBtn.Height * 0.5,
+								}
+							end
 
 							y = y - padding - editAvatarBtn.Height
 							editAvatarBtn.pos = { x, y }
@@ -1939,7 +2009,7 @@ function home()
 								displayNumberOfEntries = category.displayNumberOfEntries,
 							}
 
-							local scroll = ui:createScroll({
+							local scroll = ui:scroll({
 								-- backgroundColor = Color(255, 255, 255),
 								-- backgroundColor = Color(43, 45, 49),
 								backgroundColor = theme.buttonTextColor,
@@ -1949,6 +2019,7 @@ function home()
 								loadCell = category.loadCell,
 								unloadCell = category.unloadCell,
 								userdata = dataFetcher,
+								centerContent = true,
 							})
 
 							dataFetcher.scroll = scroll
@@ -1991,14 +2062,10 @@ function home()
 
 			local content = ui:frame()
 
-			local data = Data:FromBundle(icon or "images/logo.png")
-			local quad = Quad()
-			quad.Image = {
-				data = data,
-				alpha = true,
-			}
-
-			icon = ui:frame({ quad = quad })
+			icon = ui:frame({ image = {
+				data = Data:FromBundle(icon or "images/logo.png"),
+				cutout = true,
+			} })
 			icon.Width = 20
 			icon.Height = 20
 			icon:setParent(content)
@@ -2045,7 +2112,11 @@ function home()
 		end
 
 		btnCreate.onRelease = function()
-			Menu:ShowCreations()
+			if Player.Username == "newbie" then
+				Menu:ShowUsernameForm({ text = "A Username is mandatory to create, ready to pick one now?" })
+			else
+				Menu:ShowCreations()
+			end
 		end
 
 		bottomBar.parentDidResize = function(self)

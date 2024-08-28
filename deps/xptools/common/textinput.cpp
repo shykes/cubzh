@@ -9,6 +9,9 @@
 #include "textinput.h"
 #include "textinput.hpp"
 
+// C
+#include <cstdint>
+// C++
 #include <iostream>
 #include <string>
 #include <codecvt>
@@ -41,7 +44,12 @@ void vx::textinput::hostPlatformTextInputUpdate(const char *str, size_t strLen, 
     if (textInputUpdateCallback == nullptr) {
         return;
     }
-    textInputUpdateCallback(std::string(str, strLen), true, cursorStart, cursorEnd);
+    if (str != nullptr) {
+        textInputUpdateCallback(std::string(str, strLen), true, cursorStart, cursorEnd);
+    } else {
+        // only cursor did change
+        textInputUpdateCallback("", false, cursorStart, cursorEnd);
+    }
 }
 
 void vx::textinput::hostPlatformTextInputClose() {

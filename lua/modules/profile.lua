@@ -76,7 +76,7 @@ profile.create = function(_, config)
 	cell.Height = 100
 	cell:setParent(nil)
 
-	local scroll = ui:createScroll({
+	local scroll = ui:scroll({
 		-- backgroundColor = Color(255, 0, 0),
 		backgroundColor = theme.buttonTextColor,
 		-- backgroundColor = Color(0, 255, 0, 0.3),
@@ -88,6 +88,7 @@ profile.create = function(_, config)
 			right = theme.padding,
 		},
 		cellPadding = theme.padding,
+		centerContent = true,
 		loadCell = function(index)
 			if index == 1 then
 				return cell
@@ -106,7 +107,7 @@ profile.create = function(_, config)
 		requests = {}
 	end
 
-	local avatarNode = uiAvatar:get({ usernameOrId = username, ui = ui })
+	local avatarNode = uiAvatar:get({ usernameOrId = userID, ui = ui })
 	avatarNode:setParent(cell)
 
 	local avatarRot = Number3(0, math.pi, 0)

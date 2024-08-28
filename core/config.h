@@ -38,11 +38,12 @@ extern "C" {
 
 // PLAYER
 
-#define PLAYER_ID_SERVER 255         // ID to represent the server
-#define PLAYER_ID_ALL 254            // ID to represent all players
-#define PLAYER_ID_ALL_BUT_SELF 253   // ID to represent all players except the local one
-#define PLAYER_ID_NOT_ATTRIBUTED 252 // value before ID is attributed
-#define PLAYER_ID_NONE 251           // ID to represent no one
+#define PLAYER_ID_SERVER 255             // ID to represent the server
+#define PLAYER_ID_ALL 254                // ID to represent all players
+#define PLAYER_ID_ALL_BUT_SELF 253       // ID to represent all players except the local one
+#define PLAYER_ID_NOT_ATTRIBUTED 252     // value before ID is attributed
+#define PLAYER_ID_NONE 251               // ID to represent no one
+#define PLAYER_DEFAULT_USERNAME "newbie" // Username displayed by default when not set
 
 // EVENTS
 #define EVENT_TYPE_FROM_SCRIPT 1
@@ -236,8 +237,8 @@ typedef uint32_t ATLAS_COLOR_INDEX_INT_T;
 // complementary colors Dimensions of the data C-side: COLOR_ATLAS_SIZE * COLOR_ATLAS_SIZE / 2,
 // unique colors
 #define COLOR_ATLAS_SIZE 512
-#define ATLAS_COLOR_INDEX_MAX_COUNT 131072
-#define ATLAS_COLOR_INDEX_ERROR 999999
+#define ATLAS_COLOR_INDEX_MAX_COUNT 131071 // 131072 - 1 for error color
+#define ATLAS_COLOR_INDEX_ERROR ATLAS_COLOR_INDEX_MAX_COUNT
 
 typedef uint8_t FACE_INDEX_INT_T;
 
